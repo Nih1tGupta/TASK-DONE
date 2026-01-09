@@ -112,3 +112,62 @@ int main() {
     }
     return 0;
 }
+
+
+
+
+#include <iostream>
+#include <vector>
+#include <poll.h>
+#include <netinet/in.h>
+#include <unistd.h>
+#include <cstring>
+#include <map>
+#include "../structure/protocol.hpp"
+#include "../structure/order_manager.hpp"
+#include "../structure/session.hpp"
+
+// ... isRateLimited remains unchanged ...
+
+void handleClient(ClientSession& session, OrderManager& om) {
+    while (session.buffer.size() >= 2) {
+        uint16_t len = *reinterpret_cast<uint16_t*>(session.buffer.data());
+        if (session.buffer.size() < len) break;
+
+        uint16_t type = *reinterpret_cast<uint16_t*>(session.buffer.data() + 2);
+
+        if (isRateLimited(session)) { 
+            OrderReject rej;
+            rej.messageType = (type == 1) ? 3 : 4;
+            rej.serverOrderId = -1; // NEW REJECT constant [cite: 28]
+            send(session.fd, &rej, sizeof(rej), 0);
+        } else {
+            if (type == 1) { // NEW ORDER
+                auto* req = reinterpret_cast<NewOrderRequest*>(session.buffer.data());
+                uint64_t sid = om.addOrder(*req);
+                OrderAck ack;
+                ack.messageType = 1; ack.price = req->price; ack.size = req->size;
+                ack.clientOrderId = req->clientOrderId; 
+                ack.serverOrderId = sid; // Corrected field name [cite: 24]
+                send(session.fd, &ack, sizeof(ack), 0);
+            } else if (type == 2) { // CANCEL ORDER
+                auto* req = reinterpret_cast<CancelOrderRequest*>(session.buffer.data());
+                int32_t outId = 0;
+                if (om.tryCancel(*req, outId)) {
+                    OrderAck ack;
+                    ack.messageType = 2; ack.price = req->price; ack.size = req->size;
+                    ack.clientOrderId = outId; 
+                    ack.serverOrderId = req->serverOrderId; // Corrected field name [cite: 24]
+                    send(session.fd, &ack, sizeof(ack), 0);
+                } else {
+                    OrderReject rej;
+                    rej.messageType = 4; rej.price = req->price; rej.size = req->size;
+                    rej.serverOrderId = req->serverOrderId;
+                    send(session.fd, &rej, sizeof(rej), 0);
+                }
+            }
+        }
+        session.buffer.erase(session.buffer.begin(), session.buffer.begin() + len);
+    }
+}
+// ... main loop remains unchanged ...
