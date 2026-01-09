@@ -5,8 +5,8 @@
 
 struct ClientSession {
     int fd;
-    std::vector<char> buffer; // Buffer to hold binary stream for this client
+    std::vector<char> buffer; 
     
-    // For Rate Control: store timestamps of messages received [cite: 32]
-    std::deque<std::chrono::steady_clock::time_point> messageTimes; 
+    // For Rate Control: store timestamps of messages received [cite: 82, 85]
+    std::deque<std::chrono::steady_clock::time_point> messageTimes;
 };
