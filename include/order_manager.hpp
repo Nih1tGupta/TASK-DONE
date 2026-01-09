@@ -3,18 +3,18 @@
 #include "protocol.hpp"
 
 struct OrderEntry {
-    int32_t price;
-    int32_t size;
+    uint32_t price;
+    uint32_t size;
     int32_t clientOrderId;
     bool isCancelled = false;
 };
 
 class OrderManager {
 private:
-    std::unordered_map<int64_t, OrderEntry> orderBook; // Validates cancels [cite: 25]
-    int64_t nextId = 1000; // Counter for ServerOrderID [cite: 19]
+    std::unordered_map<uint64_t, OrderEntry> orderBook; // Validates cancels [cite: 78]
+    uint64_t nextId = 1000; // Counter for ServerOrderID [cite: 72]
 
 public:
-    int64_t addOrder(const NewOrderRequest& req);
+    uint64_t addOrder(const NewOrderRequest& req);
     bool tryCancel(const CancelOrderRequest& req, int32_t& outClientId);
 };
