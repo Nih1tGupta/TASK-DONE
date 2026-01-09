@@ -5,9 +5,9 @@
 #include <unistd.h>
 #include <cstring>
 #include <map>
-#include "protocol.hpp"
-#include "order_manager.hpp"
-#include "session.hpp"
+#include "../structure/protocol.hpp"
+#include "../structure/order_manager.hpp"
+#include "../structure/session.hpp"
 
 #define PORT 8080
 #define MAX_CLIENTS 8
@@ -34,10 +34,10 @@ void handleClient(ClientSession& session, OrderManager& om) {
 
         uint16_t type = *reinterpret_cast<uint16_t*>(session.buffer.data() + 2);
 
-        if (isRateLimited(session)) { // Rate check [cite: 61, 86]
+        if (isRateLimited(session)) { 
             OrderReject rej;
             rej.messageType = (type == 1) ? 3 : 4;
-            rej.serverOrderId = -1; // Specific for NEW REJECT [cite: 81]
+            rej.serverOrderId = -1; 
             send(session.fd, &rej, sizeof(rej), 0);
         } else {
             if (type == 1) { // NEW
@@ -95,7 +95,7 @@ int main() {
                 int c_fd = accept(server_fd, nullptr, nullptr);
                 if (fds.size() <= MAX_CLIENTS) {
                     fds.push_back({c_fd, POLLIN, 0});
-                    sessions[c_fd] = {c_fd, {}};
+                    sessions[c_fd] = {c_fd, {},{}};
                 } else { close(c_fd); }
             } else {
                 char tmp[1024];
