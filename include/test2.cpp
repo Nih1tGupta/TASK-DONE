@@ -3,7 +3,10 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <cstring>
-#include "protocol.hpp"
+#include "../structure/protocol.hpp"
+
+
+
 
 int main() {
     int sock = socket(AF_INET, SOCK_STREAM, 0);
@@ -21,7 +24,6 @@ int main() {
 
     std::cout << "Connected to server\n\n";
 
-    // ---------------- SEND NEW ORDER ----------------
     NewOrderRequest newReq;
     newReq.length = 16;
     newReq.messageType = 1;
@@ -38,7 +40,7 @@ int main() {
 
     char buf[64];
     int n = recv(sock, buf, sizeof(buf), 0);
-
+    if(n<=0){std::cerr<<"DISCONNECTED"<<std::endl;return -1;}
     uint16_t msgType = *reinterpret_cast<uint16_t*>(buf + 2);
 
     int64_t serverOrderId = -1;
@@ -62,7 +64,6 @@ int main() {
         return 0;
     }
 
-    // ---------------- SEND CANCEL ORDER ----------------
     CancelOrderRequest cancelReq;
     cancelReq.length = 16;
     cancelReq.messageType = 2;
