@@ -100,3 +100,21 @@ int main() {
     std::cout << "Client finished\n";
     return 0;
 }
+
+
+
+// ... initial connection remains same ...
+    if (msgType == 1) { // NEW ACK
+        auto* ack = reinterpret_cast<OrderAck*>(buf);
+        serverOrderId = ack->serverOrderId; // Renamed 8-byte field [cite: 24]
+
+        std::cout << "NEW ACK received. ServerOrderID: " << ack->serverOrderId << "\n";
+    }
+
+    CancelOrderRequest cancelReq;
+    cancelReq.length = 20; // 16 (previous) -> 20 (with 8-byte ID)
+    cancelReq.messageType = 2;
+    cancelReq.price = 500;
+    cancelReq.size = 10;
+    cancelReq.serverOrderId = serverOrderId; // Correctly sending 8-byte ID [cite: 17]
+// ... rest of client recv remains same ...
