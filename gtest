@@ -1,0 +1,53 @@
+#include <gtest/gtest.h>
+#include "../structure/order_manager.hpp"
+#include "../structure/protocol.hpp"
+
+// Test Case 1: Successfully adding an order
+TEST(OrderManagerTest, AddOrderSuccess) {
+    OrderManager om;
+    NewOrderRequest req{16, 1, 500, 10, 55};
+    uint64_t id = om.addOrder(req);
+    
+    EXPECT_GE(id, 1000); // Verify IDs start at 1000 [cite: 19]
+}
+
+// Test Case 2: Successful Cancel (Price and Size match)
+TEST(OrderManagerTest, CancelSuccess) {
+    OrderManager om;
+    NewOrderRequest newReq{16, 1, 500, 10, 55};
+    uint64_t sid = om.addOrder(newReq);
+
+    CancelOrderRequest canReq{20, 2, 500, 10, sid};
+    int32_t outClientId = 0;
+    
+    // Should return true because it's valid [cite: 25]
+    EXPECT_TRUE(om.tryCancel(canReq, outClientId));
+    EXPECT_EQ(outClientId, 55); // Verify it echoes the right ClientID [cite: 57]
+}
+
+// Test Case 3: Reject Cancel with Wrong Price
+TEST(OrderManagerTest, CancelRejectWrongPrice) {
+    OrderManager om;
+    NewOrderRequest newReq{16, 1, 500, 10, 55};
+    uint64_t sid = om.addOrder(newReq);
+
+    // Client sends price 600 instead of 500
+    CancelOrderRequest canReq{20, 2, 600, 10, sid};
+    int32_t outClientId = 0;
+    
+    // Should return false (triggering a REJECT) [cite: 25, 26]
+    EXPECT_FALSE(om.tryCancel(canReq, outClientId));
+}
+
+// Test Case 4: Reject Double Cancel
+TEST(OrderManagerTest, DoubleCancelReject) {
+    OrderManager om;
+    NewOrderRequest newReq{16, 1, 500, 10, 55};
+    uint64_t sid = om.addOrder(newReq);
+
+    CancelOrderRequest canReq{20, 2, 500, 10, sid};
+    int32_t outId = 0;
+
+    om.tryCancel(canReq, outId); // First one succeeds
+    EXPECT_FALSE(om.tryCancel(canReq, outId)); // Second one must fail [cite: 25]
+}
